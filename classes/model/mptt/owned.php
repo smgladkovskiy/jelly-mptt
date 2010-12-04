@@ -1,24 +1,24 @@
-<?php defined('SYSPATH') OR die('No direct access allowed.');
+<?php defined('SYSPATH') or die('No direct access allowed.');
 /**
- * 
- * Jelly_MPTT owned test model   
+ *
+ * Jelly_MPTT owned test model
  *
  * @package MPTT
  * @author Alexander Kupreyeu (Kupreev) (alexander dot kupreev at gmail dot com, http://kupreev.com)
  */
 class Model_MPTT_Owned extends Jelly_Model_MPTT {
-    
+
     protected $table = 'jelly_mptt_owned';
-    
+
     protected $_db;
-    
+
     public function __construct()
     {
         parent::__construct();
-        
+
         $this->_db = Database::instance('unit_testing');
     }
-    
+
     public static function initialize(Jelly_Meta $meta)
     {
         // Notice how the MPTT fields are added automatically
@@ -29,8 +29,8 @@ class Model_MPTT_Owned extends Jelly_Model_MPTT {
             'owner' => new Field_BelongsTo,
             'name' => new Field_String,
             );
-        
+
         parent::initialize($meta);
     }
-    
+
 }
