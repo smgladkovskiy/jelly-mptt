@@ -210,11 +210,11 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 			return FALSE;
 		}
 
-        return Jelly::select($this)
+        return Jelly::query($this)
             ->where($this->_left_column, '=', 1)
             ->where($this->_scope_column, '=', $scope)
             ->limit(1)
-            ->execute();
+            ->select();
 	}
 
 	/**
@@ -239,7 +239,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	 */
 	public function parents($root = TRUE, $direction = 'ASC', $direct_parent_only = FALSE)
 	{
-		$query = Jelly::select($this)
+		$query = Jelly::query($this)
 			->where($this->_left_column, '<=', $this->left)
 			->where($this->_right_column, '>=', $this->right)
 			->where($this->meta()->primary_key(), '<>', $this->{$this->meta()->primary_key()})
@@ -258,7 +258,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 			    ->limit(1);
 		}
 
-        $parents = $query->execute();
+        $parents = $query->select();
 
 		return $parents;
 	}
@@ -338,7 +338,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	 */
 	public function siblings($self = FALSE, $direction = 'ASC')
 	{
-		$query = Jelly::select($this)
+		$query = Jelly::query($this)
 			->where($this->_left_column, '>', $this->parent->left)
 			->where($this->_right_column, '<', $this->parent->right)
 			->where($this->_scope_column, '=', $this->scope)
@@ -350,7 +350,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 			$query->where($this->meta()->primary_key(), '<>', $this->{$this->meta()->primary_key()});
 		}
 
-        return $query->execute();
+        return $query->select();
 	}
 
 	/**
@@ -493,7 +493,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 
 		if ( ! $target instanceof $this)
 		{
-			$target = Jelly::select($this)
+			$target = Jelly::query($this)
                 ->load($target);
 
 			if ( ! $target->loaded())
@@ -741,7 +741,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 		{
 			if ( ! $target instanceof $this)
 			{
-				$target = Jelly::select($this)->load($target);
+				$target = Jelly::query($this)->load($target);
 
 				if ( ! $target->loaded())
 				{
@@ -840,9 +840,11 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
             case 'scope_column':
                 return $this->meta()->scope_column; */
             case 'db':
-                return $this->meta()->db();
+	            $db = $this->meta()->db();
+                return $db;
             case 'table':
-                return $this->meta()->table();
+	            $table = $this->meta()->table();
+                return $table;
 			default:
 				return parent::__get($column);
 		}
