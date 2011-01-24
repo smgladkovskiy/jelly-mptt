@@ -22,7 +22,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 
 	/**
 	 * @access protected
-	 * @var string menu view folder.
+	 * @var string default view folder.
 	 */
 	protected $_style = 'default';
 
@@ -41,7 +41,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 		// Initialize jelly model
 		parent::__construct($values);
 
-        // Check we have menu values for all (MPTT) fields (otherwise we cause errors)
+        // Check we have default values for all (MPTT) fields (otherwise we cause errors)
         foreach ($this->meta()->fields() as $name => $field)
         {
             if ($field instanceof Jelly_Field_MPTT AND ! isset($this->_original[$name]))
@@ -382,7 +382,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	 *
 	 * @access private
 	 * @param integer $start start position.
-	 * @param integer $size the size of the gap (menu is 2).
+	 * @param integer $size the size of the gap (default is 2).
      * @return void
 	 */
 	private function create_space($start, $size = 2)
@@ -411,7 +411,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	 *
 	 * @access private
 	 * @param integer $start start position.
-	 * @param integer $size the size of the gap (menu is 2).
+	 * @param integer $size the size of the gap (default is 2).
      * @return void
 	 */
 	private function delete_space($start, $size = 2)
