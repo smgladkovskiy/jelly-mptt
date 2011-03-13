@@ -389,17 +389,13 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	{
 		// Update the left values, then the right.
 		DB::update($this->table)
-			->set(array(
-                $this->_left_column => new Database_Expression('`'.$this->_left_column.'` + '.$size)
-                ))
+			->set(array($this->_left_column => DB::expr('`'.$this->_left_column.'` + '.$size)))
 			->where($this->_left_column, '>=', $start)
 			->where($this->_scope_column, '=', $this->scope)
 			->execute($this->db);
 
 		DB::update($this->table)
-			->set(array(
-                $this->_right_column => new Database_Expression('`'.$this->_right_column.'` + '.$size)
-                ))
+			->set(array($this->_right_column => DB::expr('`'.$this->_right_column.'` + '.$size)))
 			->where($this->_right_column, '>=', $start)
 			->where($this->_scope_column, '=', $this->scope)
 			->execute($this->db);
@@ -419,7 +415,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 		// Update the left values, then the right.
 		DB::update($this->table)
 			->set(array(
-                $this->_left_column => new Database_Expression('`'.$this->_left_column.'` - '.$size)
+                $this->_left_column => DB::expr('`'.$this->_left_column.'` - '.$size)
                 ))
 			->where($this->_left_column, '>=', $start)
 			->where($this->_scope_column, '=', $this->scope)
@@ -427,7 +423,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 
 		DB::update($this->table)
 			->set(array(
-                $this->_right_column => new Database_Expression('`'.$this->_right_column.'` - '.$size)
+                $this->_right_column => DB::expr('`'.$this->_right_column.'` - '.$size)
                 ))
 			->where($this->_right_column, '>=', $start)
 			->where($this->_scope_column, '=', $this->scope)
@@ -740,7 +736,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 		{
 			if ( ! $target instanceof $this)
 			{
-				$target = Jelly::query($this, $target)->select();
+				$target = Jelly::query($this->meta()->model(), $target)->select();
 
 				if ( ! $target->loaded())
 				{
@@ -784,8 +780,8 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
                     $this->_scope_column => $target->scope
                     ))
                 ->where($this->_left_column, '>=', $this->left)
-                ->and_where($this->_right_column, '<=', $this->right)
-                ->and_where($this->_scope_column, '=', $this->scope)
+                ->where($this->_right_column, '<=', $this->right)
+                ->where($this->_scope_column, '=', $this->scope)
                 ->execute($this->db);
 
 			$this->delete_space($this->left, $size);
@@ -813,23 +809,32 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 		switch ($column)
 		{
 			case 'parent':
-				return $this->parent();
+				$parent = $this->parent();
+				return $parent;
 			case 'parents':
-				return $this->parents();
+				$parents = $this->parents();
+				return $parents;
 			case 'children':
-				return $this->children();
+				$children = $this->children();
+				return $children;
 			case 'first_child':
-				return $this->children(FALSE, 'ASC', 1);
+				$first_child = $this->children(FALSE, 'ASC', 1);
+				return $first_child;
 			case 'last_child':
-				return $this->children(FALSE, 'DESC', 1);
+				$last_child = $this->children(FALSE, 'DESC', 1);
+				return $last_child;
 			case 'siblings':
-				return $this->siblings();
+				$siblings = $this->siblings();
+				return $siblings;
 			case 'root':
-				return $this->root();
+				$root = $this->root();
+				return $root;
 			case 'leaves':
-				return $this->leaves();
+				$leaves = $this->leaves();
+				return $leaves;
 			case 'descendants':
-				return $this->descendants();
+				$descedants = $this->descendants();
+				return $descedants;
             /*case 'left_column':
                 return $this->meta()->left_column;
             case 'right_column':
