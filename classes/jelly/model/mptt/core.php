@@ -294,10 +294,10 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 		$right_operator = $self ? '<=' : '<';
 
 		$query = Jelly::query($this)
-			->where($this->_left_column, $left_operator, $this->left)
-			->where($this->_right_column, $right_operator, $this->right)
-			->where($this->_scope_column, '=', $this->scope)
-			->order_by($this->_left_column, $direction);
+			->where($this->meta()->table().'.'.$this->_left_column, $left_operator, $this->left)
+			->where($this->meta()->table().'.'.$this->_right_column, $right_operator, $this->right)
+			->where($this->meta()->table().'.'.$this->_scope_column, '=', $this->scope)
+			->order_by($this->meta()->table().'.'.$this->_left_column, $direction);
 
 		if ($direct_children_only)
 		{
@@ -311,13 +311,13 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 			}
 			else
 			{
-				$query->where($this->_level_column, '=', $this->level + 1);
+				$query->where($this->meta()->table().'.'.$this->_level_column, '=', $this->level + 1);
 			}
 		}
 
 		if ($leaves_only)
 		{
-			$query->where($this->_right_column, '=', new Database_Expression('`'.$this->_left_column.'` + 1'));
+			$query->where($this->meta()->table().'.'.$this->_right_column, '=', new Database_Expression($this->meta()->table().'.'.'`'.$this->_left_column.'` + 1'));
 		}
 
         if ($limit)
@@ -339,11 +339,11 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	public function siblings($self = FALSE, $direction = 'ASC')
 	{
 		$query = Jelly::query($this)
-			->where($this->_left_column, '>', $this->parent->left)
-			->where($this->_right_column, '<', $this->parent->right)
-			->where($this->_scope_column, '=', $this->scope)
-			->where($this->_level_column, '=', $this->level)
-			->order_by($this->_left_column, $direction);
+			->where($this->meta()->table().'.'.$this->_left_column, '>', $this->parent->left)
+			->where($this->meta()->table().'.'.$this->_right_column, '<', $this->parent->right)
+			->where($this->meta()->table().'.'.$this->_scope_column, '=', $this->scope)
+			->where($this->meta()->table().'.'.$this->_level_column, '=', $this->level)
+			->order_by($this->meta()->table().'.'.$this->_left_column, $direction);
 
 		if ( ! $self)
 		{
