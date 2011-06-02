@@ -211,8 +211,8 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 		}
 
         return Jelly::query($this)
-            ->where($this->_left_column, '=', 1)
-            ->where($this->_scope_column, '=', $scope)
+            ->where($this->meta()->table().'.'.$this->_left_column, '=', 1)
+            ->where($this->meta()->table().'.'.$this->_scope_column, '=', $scope)
             ->limit(1)
             ->select();
 	}
