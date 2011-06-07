@@ -387,18 +387,30 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	 */
 	private function create_space($start, $size = 2)
 	{
-		// Update the left values, then the right.
-		DB::update($this->table)
+		Jelly::query($this->meta()->model())
 			->set(array($this->_left_column => DB::expr('`'.$this->_left_column.'` + '.$size)))
 			->where($this->_left_column, '>=', $start)
 			->where($this->_scope_column, '=', $this->scope)
-			->execute($this->db);
+			->update();
 
-		DB::update($this->table)
+		Jelly::query($this->meta()->model())
 			->set(array($this->_right_column => DB::expr('`'.$this->_right_column.'` + '.$size)))
 			->where($this->_right_column, '>=', $start)
 			->where($this->_scope_column, '=', $this->scope)
-			->execute($this->db);
+			->update();
+
+		// Update the left values, then the right.
+//		DB::update($this->table)
+//			->set(array($this->_left_column => DB::expr('`'.$this->_left_column.'` + '.$size)))
+//			->where($this->_left_column, '>=', $start)
+//			->where($this->_scope_column, '=', $this->scope)
+//			->execute($this->db);
+//
+//		DB::update($this->table)
+//			->set(array($this->_right_column => DB::expr('`'.$this->_right_column.'` + '.$size)))
+//			->where($this->_right_column, '>=', $start)
+//			->where($this->_scope_column, '=', $this->scope)
+//			->execute($this->db);
 	}
 
 	/**
@@ -412,22 +424,38 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	 */
 	private function delete_space($start, $size = 2)
 	{
-		// Update the left values, then the right.
-		DB::update($this->table)
+		Jelly::query($this->meta()->model())
 			->set(array(
                 $this->_left_column => DB::expr('`'.$this->_left_column.'` - '.$size)
                 ))
 			->where($this->_left_column, '>=', $start)
 			->where($this->_scope_column, '=', $this->scope)
-			->execute($this->db);
+			->update();
 
-		DB::update($this->table)
+		Jelly::query($this->meta()->model())
 			->set(array(
                 $this->_right_column => DB::expr('`'.$this->_right_column.'` - '.$size)
                 ))
 			->where($this->_right_column, '>=', $start)
 			->where($this->_scope_column, '=', $this->scope)
-			->execute($this->db);
+			->update();
+
+		// Update the left values, then the right.
+//		DB::update($this->table)
+//			->set(array(
+//                $this->_left_column => DB::expr('`'.$this->_left_column.'` - '.$size)
+//                ))
+//			->where($this->_left_column, '>=', $start)
+//			->where($this->_scope_column, '=', $this->scope)
+//			->execute($this->db);
+//
+//		DB::update($this->table)
+//			->set(array(
+//                $this->_right_column => DB::expr('`'.$this->_right_column.'` - '.$size)
+//                ))
+//			->where($this->_right_column, '>=', $start)
+//			->where($this->_scope_column, '=', $this->scope)
+//			->execute($this->db);
 	}
 
 	/**
@@ -461,7 +489,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 			//parent::create();
             $this->save();
 		}
-		catch (Validate_Exception $e)
+		catch (Jelly_Validation_Exception $e)
 		{
 			// There was an error validating the additional fields, re-thow it
 			throw $e;
@@ -516,7 +544,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 		{
             $this->save();
 		}
-		catch (Exception $e)
+		catch (Jelly_Validation_Exception $e)
 		{
 			// We had a problem creating - make sure we clean up the tree
 			$this->delete_space($this->left);
@@ -608,11 +636,11 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 		// Handle un-foreseen exceptions
 		try
 		{
-			DB::delete($this->table)
+			Jelly::query($this->meta()->model())
 				->where($this->_left_column, '>=', $this->left)
 				->where($this->_right_column, '<=', $this->right)
 				->where($this->_scope_column, '=', $this->scope)
-				->execute($this->db);
+				->delete();
 
 			$this->delete_space($this->left, $this->get_size());
 		}
