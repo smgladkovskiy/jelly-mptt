@@ -240,21 +240,21 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	public function parents($root = TRUE, $direction = 'ASC', $direct_parent_only = FALSE)
 	{
 		$query = Jelly::query($this)
-			->where($this->_left_column, '<=', $this->left)
-			->where($this->_right_column, '>=', $this->right)
+			->where($this->meta()->table().'.'.$this->_left_column, '<=', $this->left)
+			->where($this->meta()->table().'.'.$this->_right_column, '>=', $this->right)
 			->where($this->meta()->primary_key(), '<>', $this->{$this->meta()->primary_key()})
-			->where($this->_scope_column, '=', $this->scope)
-			->order_by($this->_left_column, $direction);
+			->where($this->meta()->table().'.'.$this->_scope_column, '=', $this->scope)
+			->order_by($this->meta()->table().'.'.$this->_left_column, $direction);
 
 		if ( ! $root)
 		{
-			$query->where($this->_left_column, '!=', 1);
+			$query->where($this->meta()->table().'.'.$this->_left_column, '!=', 1);
 		}
 
 		if ($direct_parent_only)
 		{
 			$query
-                ->where($this->_level_column, '=', $this->level - 1)
+                ->where($this->meta()->table().'.'.$this->_level_column, '=', $this->level - 1)
 			    ->limit(1);
 		}
 
@@ -305,8 +305,8 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 			{
 				$query
 					->and_where_open()
-					->where($this->_level_column, '=', $this->level)
-					->or_where($this->_level_column, '=', $this->level + 1)
+					->where($this->meta()->table().'.'.$this->_level_column, '=', $this->level)
+					->or_where($this->meta()->table().'.'.$this->_level_column, '=', $this->level + 1)
 					->and_where_close();
 			}
 			else
@@ -486,7 +486,6 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 
 		try
 		{
-			//parent::create();
             $this->save();
 		}
 		catch (Jelly_Validation_Exception $e)
@@ -902,12 +901,8 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 		return TRUE;
 	}
 
-	private function get_scopes()
+	public function get_scopes()
 	{
-		// TODO... redo this so its proper :P and open it public
-		// used by verify_tree()
-        //return DB::select()->as_object()->distinct($this->scope_column)->from($this->table)->execute($this->db);
-
         return DB::select($this->_scope_column)->distinct(TRUE)->from($this->table)->as_object()->execute($this->db);
 	}
 
