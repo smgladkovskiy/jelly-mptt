@@ -26,63 +26,65 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	 */
 	protected $_style = 'default';
 
-    protected $_left_column = NULL;
-    protected $_right_column = NULL;
-    protected $_level_column = NULL;
-    protected $_scope_column = NULL;
+	protected $_left_column = NULL;
+	protected $_right_column = NULL;
+	protected $_level_column = NULL;
+	protected $_scope_column = NULL;
 
 	/**
 	 * Initialize the fields and add MPTT field defaults if not specified
 	 * @param  array  $values
-     * @return void
+	 * @return void
 	 */
 	public function __construct($values = NULL)
 	{
 		// Initialize jelly model
 		parent::__construct($values);
 
-        // Check we have default values for all (MPTT) fields (otherwise we cause errors)
-        foreach ($this->meta()->fields() as $name => $field)
-        {
-            if ($field instanceof Jelly_Field_MPTT AND ! isset($this->_original[$name]))
-            {
-                $this->_original[$name] = NULL;
-            }
-        }
+		// Check we have default values for all (MPTT) fields (otherwise we cause errors)
+		foreach ($this->meta()->fields() as $name => $field)
+		{
+			if ($field instanceof Jelly_Field_MPTT AND ! isset($this->_original[$name]))
+			{
+				$this->_original[$name] = NULL;
+			}
+		}
 
-        $this->_left_column = $this->meta()->field('left')->column;
-        $this->_right_column = $this->meta()->field('right')->column;
-        $this->_level_column = $this->meta()->field('level')->column;
-        $this->_scope_column = $this->meta()->field('scope')->column;
-    }
+		$this->_left_column = $this->meta()->field('left')->column;
+		$this->_right_column = $this->meta()->field('right')->column;
+		$this->_level_column = $this->meta()->field('level')->column;
+		$this->_scope_column = $this->meta()->field('scope')->column;
+	}
 
-    public static function initialize(Jelly_Meta $meta)
-    {
+	public static function initialize(Jelly_Meta $meta)
+	{
 
-        $meta->fields(array(
-            //'id' => new Field_Primary,
+		$meta->fields(array(
+			//'id' => new Field_Primary,
 
-            'left'   => new Jelly_Field_MPTT_Left(array(
-                'column' => 'lft',
-                )),
-            'right'  => new Jelly_Field_MPTT_Right(array(
-                'column' => 'rgt',
-                )),
-            'level'  => new Jelly_Field_MPTT_Level(array(
-                'column' => 'lvl',
-                )),
-            'scope'  => new Jelly_Field_MPTT_Scope(array(
-                'column' => 'scope',
-                )),
-            ));
+			'left'   => new Jelly_Field_MPTT_Left(array(
+				'column' => 'lft',
+				)),
+			'right'  => new Jelly_Field_MPTT_Right(array(
+				'column' => 'rgt',
+				)),
+			'level'  => new Jelly_Field_MPTT_Level(array(
+				'column'        => 'lvl',
+				'allow_null'    => TRUE,
+				'convert_empty' => TRUE,
+				)),
+			'scope'  => new Jelly_Field_MPTT_Scope(array(
+				'column' => 'scope',
+				)),
+			));
 
-        // Check we don't have a composite primary Key
-        if (is_array($meta->primary_key()))
-        {
-            throw new Kohana_Exception('Jelly_MPTT does not support composite primary keys');
-        }
+		// Check we don't have a composite primary Key
+		if (is_array($meta->primary_key()))
+		{
+			throw new Kohana_Exception('Jelly_MPTT does not support composite primary keys');
+		}
 
-    }
+	}
 
 
 	/**
@@ -137,10 +139,10 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	public function is_descendant($target)
 	{
 		return (
-		    $this->left > $target->left
+			$this->left > $target->left
 				AND $this->right < $target->right
 				AND $this->scope == $target->scope
-		    );
+			);
 	}
 
 	/**
@@ -210,11 +212,11 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 			return FALSE;
 		}
 
-        return Jelly::query($this)
-            ->where($this->meta()->table().'.'.$this->_left_column, '=', 1)
-            ->where($this->meta()->table().'.'.$this->_scope_column, '=', $scope)
-            ->limit(1)
-            ->select();
+		return Jelly::query($this)
+			->where($this->meta()->table().'.'.$this->_left_column, '=', 1)
+			->where($this->meta()->table().'.'.$this->_scope_column, '=', $scope)
+			->limit(1)
+			->select();
 	}
 
 	/**
@@ -234,7 +236,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	 * @access public
 	 * @param bool $root include the root node?
 	 * @param string $direction direction to order the left column by.
-     * @param bool $direct_parent_only
+	 * @param bool $direct_parent_only
 	 * @return Jelly_Model_MPTT
 	 */
 	public function parents($root = TRUE, $direction = 'ASC', $direct_parent_only = FALSE)
@@ -254,11 +256,11 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 		if ($direct_parent_only)
 		{
 			$query
-                ->where($this->meta()->table().'.'.$this->_level_column, '=', $this->level - 1)
-			    ->limit(1);
+				->where($this->meta()->table().'.'.$this->_level_column, '=', $this->level - 1)
+				->limit(1);
 		}
 
-        $parents = $query->select();
+		$parents = $query->select();
 
 		return $parents;
 	}
@@ -269,7 +271,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	 * @access public
 	 * @param bool $self include the current loaded node?
 	 * @param string $direction direction to order the left column by.
-     * @param int|bool $limit
+	 * @param int|bool $limit
 	 * @return Jelly_Model_MPTT
 	 */
 	public function children($self = FALSE, $direction = 'ASC', $limit = FALSE)
@@ -283,9 +285,9 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	 * @access public
 	 * @param bool $self include the current loaded node?
 	 * @param string $direction direction to order the left column by.
-     * @param bool  $direct_children_only
-     * @param bool  $leaves_only
-     * @param int|bool $limit
+	 * @param bool  $direct_children_only
+	 * @param bool  $leaves_only
+	 * @param int|bool $limit
 	 * @return Jelly_Model_MPTT
 	 */
 	public function descendants($self = FALSE, $direction = 'ASC', $direct_children_only = FALSE, $leaves_only = FALSE, $limit = FALSE)
@@ -320,12 +322,12 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 			$query->where($this->meta()->table().'.'.$this->_right_column, '=', new Database_Expression($this->meta()->table().'.'.'`'.$this->_left_column.'` + 1'));
 		}
 
-        if ($limit)
-        {
-            $query->limit($limit);
-        }
+		if ($limit)
+		{
+			$query->limit($limit);
+		}
 
-        return $query->select();
+		return $query->select();
 	}
 
 	/**
@@ -350,15 +352,15 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 			$query->where($this->meta()->primary_key(), '<>', $this->{$this->meta()->primary_key()});
 		}
 
-        return $query->select();
+		return $query->select();
 	}
 
 	/**
 	 * Returns leaves under the current node.
 	 *
 	 * @access public
-     * @param bool $self include the current loaded node?
-     * @param string $direction direction to order the left column by.
+	 * @param bool $self include the current loaded node?
+	 * @param string $direction direction to order the left column by.
 	 * @return Jelly_Model_MPTT
 	 */
 	public function leaves($self = FALSE, $direction = 'ASC')
@@ -383,7 +385,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	 * @access private
 	 * @param integer $start start position.
 	 * @param integer $size the size of the gap (default is 2).
-     * @return void
+	 * @return void
 	 */
 	private function create_space($start, $size = 2)
 	{
@@ -420,22 +422,22 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	 * @access private
 	 * @param integer $start start position.
 	 * @param integer $size the size of the gap (default is 2).
-     * @return void
+	 * @return void
 	 */
 	private function delete_space($start, $size = 2)
 	{
 		Jelly::query($this->meta()->model())
 			->set(array(
-                $this->_left_column => DB::expr('`'.$this->_left_column.'` - '.$size)
-                ))
+				$this->_left_column => DB::expr('`'.$this->_left_column.'` - '.$size)
+				))
 			->where($this->_left_column, '>=', $start)
 			->where($this->_scope_column, '=', $this->scope)
 			->update();
 
 		Jelly::query($this->meta()->model())
 			->set(array(
-                $this->_right_column => DB::expr('`'.$this->_right_column.'` - '.$size)
-                ))
+				$this->_right_column => DB::expr('`'.$this->_right_column.'` - '.$size)
+				))
 			->where($this->_right_column, '>=', $start)
 			->where($this->_scope_column, '=', $this->scope)
 			->update();
@@ -473,20 +475,20 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 		// Make sure the specified scope doesn't already exist.
 		$root = $this->root($scope);
 
-        if ($root->loaded())
+		if ($root->loaded())
 			return FALSE;
 
 		// Create a new root node in the new scope.
-        $this->set(array(
-            'left' => 1,
-            'right' => 2,
-            'level' => 0,
-            'scope' => $scope
-            ));
+		$this->set(array(
+			'left' => 1,
+			'right' => 2,
+			'level' => 0,
+			'scope' => $scope
+			));
 
 		try
 		{
-            $this->save();
+			$this->save();
 		}
 		catch (Jelly_Validation_Exception $e)
 		{
@@ -500,12 +502,12 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	/**
 	 * Insert the object
 	 *
-     * @access protected
+	 * @access protected
 	 * @param Jelly_MPTT|mixed $target target node primary key value or Jelly_MPTT object.
 	 * @param string $copy_left_from target object property to take new left value from
 	 * @param integer $left_offset offset for left value
 	 * @param integer $level_offset offset for level value
-     * @return Jelly_Model_MPTT
+	 * @return Jelly_Model_MPTT
 	 * @throws Validation_Exception
 	 */
 	protected function insert($target, $copy_left_from, $left_offset, $level_offset)
@@ -541,7 +543,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 
 		try
 		{
-            $this->save();
+			$this->save();
 		}
 		catch (Jelly_Validation_Exception $e)
 		{
@@ -747,7 +749,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	 * @param integer $left_offset left value for the new node position.
 	 * @param integer $level_offset level
 	 * @param bool $allow_root_target allow this movement to be allowed on the root node
-     * @return  Jelly_Model_MPTT|bool $this
+	 * @return  Jelly_Model_MPTT|bool $this
 	 */
 	protected function move($target, $left_column, $left_offset, $level_offset, $allow_root_target)
 	{
@@ -800,16 +802,16 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 
 			// Update the values.
 			DB::update($this->table)
-                ->set(array(
-                    $this->_left_column => DB::expr('`'.$this->_left_column.'` + '.$offset),
-                    $this->_right_column => DB::expr('`'.$this->_right_column.'` + '.$offset),
-                    $this->_level_column => DB::expr('`'.$this->_level_column.'` + '.$level_offset),
-                    $this->_scope_column => $target->scope
-                    ))
-                ->where($this->_left_column, '>=', $this->left)
-                ->where($this->_right_column, '<=', $this->right)
-                ->where($this->_scope_column, '=', $this->scope)
-                ->execute($this->db);
+				->set(array(
+					$this->_left_column => DB::expr('`'.$this->_left_column.'` + '.$offset),
+					$this->_right_column => DB::expr('`'.$this->_right_column.'` + '.$offset),
+					$this->_level_column => DB::expr('`'.$this->_level_column.'` + '.$level_offset),
+					$this->_scope_column => $target->scope
+					))
+				->where($this->_left_column, '>=', $this->left)
+				->where($this->_right_column, '<=', $this->right)
+				->where($this->_scope_column, '=', $this->scope)
+				->execute($this->db);
 
 			$this->delete_space($this->left, $size);
 		}
@@ -862,20 +864,20 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 			case 'descendants':
 				$descedants = $this->descendants();
 				return $descedants;
-            /*case 'left_column':
-                return $this->meta()->left_column;
-            case 'right_column':
-                return $this->meta()->right_column;
-            case 'level_column':
-                return $this->meta()->level_column;
-            case 'scope_column':
-                return $this->meta()->scope_column; */
-            case 'db':
-	            $db = $this->meta()->db();
-                return $db;
-            case 'table':
-	            $table = $this->meta()->table();
-                return $table;
+			/*case 'left_column':
+				return $this->meta()->left_column;
+			case 'right_column':
+				return $this->meta()->right_column;
+			case 'level_column':
+				return $this->meta()->level_column;
+			case 'scope_column':
+				return $this->meta()->scope_column; */
+			case 'db':
+				$db = $this->meta()->db();
+				return $db;
+			case 'table':
+				$table = $this->meta()->table();
+				return $table;
 			default:
 				return parent::__get($column);
 		}
@@ -903,7 +905,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 
 	public function get_scopes()
 	{
-        return DB::select($this->_scope_column)->distinct(TRUE)->from($this->table)->as_object()->execute($this->db);
+		return DB::select($this->_scope_column)->distinct(TRUE)->from($this->table)->as_object()->execute($this->db);
 	}
 
 	public function verify_scope($scope)
@@ -914,32 +916,32 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 
 		// Find nodes that have slipped out of bounds.
 		$count = DB::select(array('COUNT("*")', 'count'))
-            ->from($this->table)
-            ->where($this->_scope_column, '=', $root->scope)
-            ->and_where_open($this->_left_column, '>', $end)
-                ->or_where($this->_right_column, '>', $end)
-            ->and_where_close()
-            ->execute($this->db)
-            ->get('count');
+			->from($this->table)
+			->where($this->_scope_column, '=', $root->scope)
+			->and_where_open($this->_left_column, '>', $end)
+				->or_where($this->_right_column, '>', $end)
+			->and_where_close()
+			->execute($this->db)
+			->get('count');
 		if ($count > 0)
 			return FALSE;
 
 		// Find nodes that right value is less or equal as the left value
 		$count = DB::select(array('COUNT("*")', 'count'))
-            ->from($this->table)
-            ->where($this->_scope_column, '=', $root->scope)
-            ->and_where($this->_left_column, '>=', DB::expr('`'.$this->_right_column.'`'))
-            ->execute($this->db)
-            ->get('count');
-        if ($count > 0)
-            return FALSE;
+			->from($this->table)
+			->where($this->_scope_column, '=', $root->scope)
+			->and_where($this->_left_column, '>=', DB::expr('`'.$this->_right_column.'`'))
+			->execute($this->db)
+			->get('count');
+		if ($count > 0)
+			return FALSE;
 
 		// Make sure no 2 nodes share a left/right value
 		$i = 1;
 		while ($i <= $end)
 		{
 			// TODO optimize request
-            $result = Database::instance($this->db)->query(Database::SELECT, 'SELECT count(*) as count FROM `'.Database::instance($this->db)->table_prefix().$this->table.'`
+			$result = Database::instance($this->db)->query(Database::SELECT, 'SELECT count(*) as count FROM `'.Database::instance($this->db)->table_prefix().$this->table.'`
 				WHERE `'.$this->_scope_column.'` = '.$root->scope.'
 				AND (`'.$this->_left_column.'` = '.$i.' OR `'.$this->_right_column.'` = '.$i.')', TRUE);
 
@@ -977,7 +979,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 			->execute($this->db)
 			->current();
 
-        //return $this->values($mptt_vals);
+		//return $this->values($mptt_vals);
 		return $this->set($mptt_vals);
 	}
 
