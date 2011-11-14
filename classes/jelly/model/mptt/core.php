@@ -10,10 +10,10 @@
  * @author Kiall Mac Innes
  * @author Paul Banks
  * @author Alexander Kupreyeu (Kupreev) (alexander dot kupreev at gmail dot com, http://kupreev.com)
+ * @author Sergei Gladkovskiy <smgladkovskiy@gmail.com>
  */
 abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 {
-
 	/**
 	 * @access protected
 	 * @var string mptt view folder.
@@ -34,7 +34,6 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	/**
 	 * Initialize the fields and add MPTT field defaults if not specified
 	 * @param  array  $values
-	 * @return void
 	 */
 	public function __construct($values = NULL)
 	{
@@ -50,7 +49,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 			}
 		}
 
-		$this->_left_column = $this->meta()->field('left')->column;
+		$this->_left_column  = $this->meta()->field('left')->column;
 		$this->_right_column = $this->meta()->field('right')->column;
 		$this->_level_column = $this->meta()->field('level')->column;
 		$this->_scope_column = $this->meta()->field('scope')->column;
@@ -58,49 +57,67 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 
 	public static function initialize(Jelly_Meta $meta)
 	{
-
 		$meta->fields(array(
-			//'id' => new Field_Primary,
-
-			'left'   => new Jelly_Field_MPTT_Left(array(
+			'left'  => new Jelly_Field_MPTT_Left(array(
 				'column' => 'lft',
-				)),
-			'right'  => new Jelly_Field_MPTT_Right(array(
+			)),
+			'right' => new Jelly_Field_MPTT_Right(array(
 				'column' => 'rgt',
-				)),
-			'level'  => new Jelly_Field_MPTT_Level(array(
+			)),
+			'level' => new Jelly_Field_MPTT_Level(array(
 				'column'        => 'lvl',
-				'allow_null'    => TRUE,
-				'convert_empty' => TRUE,
-				)),
-			'scope'  => new Jelly_Field_MPTT_Scope(array(
+			)),
+			'scope' => new Jelly_Field_MPTT_Scope(array(
 				'column' => 'scope',
-				)),
-			));
+			)),
+		));
 
 		// Check we don't have a composite primary Key
 		if (is_array($meta->primary_key()))
 		{
 			throw new Kohana_Exception('Jelly_MPTT does not support composite primary keys');
 		}
-
 	}
-
 
 	/**
 	 * Locks table.
+	 * If model has belongsTo fields, they are locked too
 	 *
-	 * @access private
+	 * @access protected
 	 */
 	protected function lock()
 	{
-		Database::instance($this->db)->query(NULL, 'LOCK TABLE '.Database::instance($this->db)->table_prefix().$this->table.' WRITE', TRUE);
+		$table_prefix = Database::instance($this->db)->table_prefix();
+		$lock_tables[$table_prefix.$this->table] = $table_prefix.$this->table;
+
+		foreach($this->meta()->fields() as $field)
+		{
+			if($field instanceof Jelly_Field_BelongsTo)
+			{
+				$lock_tables[$table_prefix.$this->table.':'.$field->name] = $table_prefix.Jelly::meta($field->foreign['model'])->table();
+			}
+		}
+
+		$lock_tables_count = count($lock_tables);
+
+		$sql = 'LOCK ';
+
+		$sql .= ($lock_tables_count > 1) ? 'TABLES ' : 'TABLE ';
+		$i = 0;
+		foreach($lock_tables as $alias => $lock_table)
+		{
+			$sql .= $lock_table.' AS `'.$alias.'` WRITE ';
+			if(++$i < $lock_tables_count)
+				$sql .= ', ';
+		}
+
+		Database::instance($this->db)->query(NULL, $sql, TRUE);
 	}
 
 	/**
 	 * Unlock table.
 	 *
-	 * @access private
+	 * @access protected
 	 */
 	protected function unlock()
 	{
@@ -199,7 +216,8 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	 * Returns the root node.
 	 *
 	 * @access public
-	 * @return Jelly_Model_MPTT/FALSE on invalid scope
+	 * @param  int|null $scope
+	 * @return Jelly_Model_MPTT|bool
 	 */
 	public function root($scope = NULL)
 	{
@@ -383,12 +401,12 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	 * Create a gap in the tree to make room for a new node
 	 *
 	 * @access private
-	 * @param integer $start start position.
-	 * @param integer $size the size of the gap (default is 2).
-	 * @return void
+	 * @param  integer $start start position.
+	 * @param  integer $size the size of the gap (default is 2).
 	 */
 	private function create_space($start, $size = 2)
 	{
+		// Update the left values, then the right.
 		Jelly::query($this->meta()->model())
 			->set(array($this->_left_column => DB::expr('`'.$this->_left_column.'` + '.$size)))
 			->where($this->_left_column, '>=', $start)
@@ -400,19 +418,6 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 			->where($this->_right_column, '>=', $start)
 			->where($this->_scope_column, '=', $this->scope)
 			->update();
-
-		// Update the left values, then the right.
-//		DB::update($this->table)
-//			->set(array($this->_left_column => DB::expr('`'.$this->_left_column.'` + '.$size)))
-//			->where($this->_left_column, '>=', $start)
-//			->where($this->_scope_column, '=', $this->scope)
-//			->execute($this->db);
-//
-//		DB::update($this->table)
-//			->set(array($this->_right_column => DB::expr('`'.$this->_right_column.'` + '.$size)))
-//			->where($this->_right_column, '>=', $start)
-//			->where($this->_scope_column, '=', $this->scope)
-//			->execute($this->db);
 	}
 
 	/**
@@ -420,12 +425,13 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	 * been removed.
 	 *
 	 * @access private
-	 * @param integer $start start position.
-	 * @param integer $size the size of the gap (default is 2).
+	 * @param  integer $start start position.
+	 * @param  integer $size the size of the gap (default is 2).
 	 * @return void
 	 */
 	private function delete_space($start, $size = 2)
 	{
+		// Update the left values, then the right.
 		Jelly::query($this->meta()->model())
 			->set(array(
 				$this->_left_column => DB::expr('`'.$this->_left_column.'` - '.$size)
@@ -441,23 +447,6 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 			->where($this->_right_column, '>=', $start)
 			->where($this->_scope_column, '=', $this->scope)
 			->update();
-
-		// Update the left values, then the right.
-//		DB::update($this->table)
-//			->set(array(
-//                $this->_left_column => DB::expr('`'.$this->_left_column.'` - '.$size)
-//                ))
-//			->where($this->_left_column, '>=', $start)
-//			->where($this->_scope_column, '=', $this->scope)
-//			->execute($this->db);
-//
-//		DB::update($this->table)
-//			->set(array(
-//                $this->_right_column => DB::expr('`'.$this->_right_column.'` - '.$size)
-//                ))
-//			->where($this->_right_column, '>=', $start)
-//			->where($this->_scope_column, '=', $this->scope)
-//			->execute($this->db);
 	}
 
 	/**
@@ -490,7 +479,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 		{
 			$this->save();
 		}
-		catch (Jelly_Validation_Exception $e)
+		catch(Jelly_Validation_Exception $e)
 		{
 			// There was an error validating the additional fields, re-thow it
 			throw $e;
@@ -503,10 +492,10 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	 * Insert the object
 	 *
 	 * @access protected
-	 * @param Jelly_MPTT|mixed $target target node primary key value or Jelly_MPTT object.
-	 * @param string $copy_left_from target object property to take new left value from
-	 * @param integer $left_offset offset for left value
-	 * @param integer $level_offset offset for level value
+	 * @param  Jelly_MPTT|mixed $target target node primary key value or Jelly_MPTT object.
+	 * @param  string $copy_left_from target object property to take new left value from
+	 * @param  integer $left_offset offset for left value
+	 * @param  integer $level_offset offset for level value
 	 * @return Jelly_Model_MPTT
 	 * @throws Validation_Exception
 	 */
@@ -539,10 +528,9 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 			'scope' => $target->scope,
 			));
 
-		$this->create_space($this->left);
-
 		try
 		{
+			$this->create_space($this->left);
 			$this->save();
 		}
 		catch (Jelly_Validation_Exception $e)
@@ -562,8 +550,8 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	 * Inserts a new node as the first child of the target node
 	 *
 	 * @access public
-	 * @param Jelly_Model_MPTT|mixed $target target node primary key value or Jelly_MPTT object.
-	 * @return  Jelly_Model_MPTT
+	 * @param  Jelly_Model_MPTT|mixed $target target node primary key value or Jelly_MPTT object.
+	 * @return Jelly_Model_MPTT
 	 */
 	public function insert_as_first_child($target)
 	{
@@ -574,7 +562,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	 * Inserts a new node as the last child of the target node
 	 *
 	 * @access public
-	 * @param Jelly_Model_MPTT|mixed $target target node primary key value or Jelly_Model_MPTT object.
+	 * @param  Jelly_Model_MPTT|mixed $target target node primary key value or Jelly_Model_MPTT object.
 	 * @return Jelly_Model_MPTT
 	 */
 	public function insert_as_last_child($target)
@@ -586,7 +574,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	 * Inserts a new node as a previous sibling of the target node.
 	 *
 	 * @access public
-	 * @param Jelly_Model_MPTT|integer $target target node id or Jelly_Model_MPTT object.
+	 * @param  Jelly_Model_MPTT|integer $target target node id or Jelly_Model_MPTT object.
 	 * @return Jelly_Model_MPTT
 	 */
 	public function insert_as_prev_sibling($target)
@@ -598,7 +586,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	 * Inserts a new node as the next sibling of the target node.
 	 *
 	 * @access public
-	 * @param Jelly_Model_MPTT|integer $target target node id or Jelly_Model_MPTT object.
+	 * @param  Jelly_Model_MPTT|integer $target target node id or Jelly_Model_MPTT object.
 	 * @return Jelly_Model_MPTT
 	 */
 	public function insert_as_next_sibling($target)
@@ -610,7 +598,6 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	 * Overloaded create method
 	 *
 	 * @access public
-	 * @return void
 	 * @throws Validation_Exception
 	 */
 	public function create()
@@ -623,14 +610,12 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	/**
 	 * Removes a node and it's descendants.
 	 *
-	 * @access public
+	 * @throws Jelly_Validation_Exception|Kohana_Exception
 	 */
-	public function delete_obj(Database_Query_Builder_Delete $query = NULL)
+	public function delete_obj()
 	{
-		if ($query !== NULL)
-		{
-			throw new Kohana_Exception('Jelly_MPTT does not support passing a query object to delete()');
-		}
+		if( ! $this->loaded())
+			throw new Kohana_Exception('Object is not loaded!');
 
 		$this->lock();
 
@@ -645,7 +630,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 
 			$this->delete_space($this->left, $this->get_size());
 		}
-		catch (Exception $e)
+		catch (Jelly_Validation_Exception $e)
 		{
 			//Unlock table and re-throw exception
 			$this->unlock();
@@ -661,18 +646,17 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	 *
 	 * Returns all recods in the current scope
 	 *
-	 * @param string $key first table column.
-	 * @param string $val second table column.
-	 * @param string $indent character used for indenting.
+	 * @param  string $key first table column.
+	 * @param  string $value second table column.
+	 * @param  string|null $indent character used for indenting.
 	 * @return array
 	 */
 	public function select_list($key = 'id', $value = 'name', $indent = NULL)
 	{
-		$result = DB::select($key, $value, $this->_level_column)
-			->from($this->table)
-			->where($this->_scope_column, '=',$this->scope)
+		$result = Jelly::query($this->meta()->model())
+            ->where($this->_scope_column, '=', $this->scope)
 			->order_by($this->_left_column, 'ASC')
-			->execute($this->db);
+            ->select();
 
 		if (is_string($indent))
 		{
@@ -680,7 +664,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 
 			foreach ($result as $row)
 			{
-				$array[$row[$key]] = str_repeat($indent, $row[$this->_level_column]).$row[$value];
+				$array[$row->$key] = str_repeat($indent, $row->{$this->_level_column}.$row->$value);
 			}
 
 			return $array;
@@ -694,7 +678,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	 *
 	 * Moves the current node to the first child of the target node.
 	 *
-	 * @param Jelly_Model_MPTT|integer $target target node id or Jelly_Model_MPTT object.
+	 * @param  Jelly_Model_MPTT|integer $target target node id or Jelly_Model_MPTT object.
 	 * @return Jelly_Model_MPTT
 	 */
 	public function move_to_first_child($target)
@@ -707,7 +691,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	 *
 	 * Moves the current node to the last child of the target node.
 	 *
-	 * @param Jelly_Model_MPTT|integer $target target node id or Jelly_Model_MPTT object.
+	 * @param  Jelly_Model_MPTT|integer $target target node id or Jelly_Model_MPTT object.
 	 * @return Jelly_Model_MPTT
 	 */
 	public function move_to_last_child($target)
@@ -720,7 +704,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	 *
 	 * Moves the current node to the previous sibling of the target node.
 	 *
-	 * @param Jelly_Model_MPTT|integer $target target node id or Jelly_Model_MPTT object.
+	 * @param  Jelly_Model_MPTT|integer $target target node id or Jelly_Model_MPTT object.
 	 * @return Jelly_Model_MPTT
 	 */
 	public function move_to_prev_sibling($target)
@@ -733,7 +717,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	 *
 	 * Moves the current node to the next sibling of the target node.
 	 *
-	 * @param Jelly_Model_MPTT|integer $target target node id or Jelly_Model_MPTT object.
+	 * @param  Jelly_Model_MPTT|integer $target target node id or Jelly_Model_MPTT object.
 	 * @return Jelly_Model_MPTT
 	 */
 	public function move_to_next_sibling($target)
@@ -744,12 +728,12 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	/**
 	 * Move
 	 *
-	 * @param Jelly_Model_MPTT|integer $target target node id or Jelly_Model_MPTT object.
-	 * @param bool $left_column use the left column or right column from target
-	 * @param integer $left_offset left value for the new node position.
-	 * @param integer $level_offset level
-	 * @param bool $allow_root_target allow this movement to be allowed on the root node
-	 * @return  Jelly_Model_MPTT|bool $this
+	 * @param  Jelly_Model_MPTT|integer $target target node id or Jelly_Model_MPTT object.
+	 * @param  bool $left_column use the left column or right column from target
+	 * @param  integer $left_offset left value for the new node position.
+	 * @param  integer $level_offset level
+	 * @param  bool $allow_root_target allow this movement to be allowed on the root node
+	 * @return Jelly_Model_MPTT|bool
 	 */
 	protected function move($target, $left_column, $left_offset, $level_offset, $allow_root_target)
 	{
@@ -772,10 +756,6 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 					$this->unlock();
 					return FALSE;
 				}
-			}
-			else
-			{
-				$target->reload();
 			}
 
 			// Stop $this being moved into a descendant or itself or disallow if target is root
@@ -801,21 +781,30 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 			$offset = ($left_offset - $this->left);
 
 			// Update the values.
-			DB::update($this->table)
-				->set(array(
-					$this->_left_column => DB::expr('`'.$this->_left_column.'` + '.$offset),
-					$this->_right_column => DB::expr('`'.$this->_right_column.'` + '.$offset),
-					$this->_level_column => DB::expr('`'.$this->_level_column.'` + '.$level_offset),
-					$this->_scope_column => $target->scope
+			try
+			{
+				Jelly::query($this->meta()->model())
+					->set(array(
+						$this->_left_column => DB::expr('`'.$this->_left_column.'` + '.$offset),
+						$this->_right_column => DB::expr('`'.$this->_right_column.'` + '.$offset),
+						$this->_level_column => DB::expr('`'.$this->_level_column.'` + '.$level_offset),
+						$this->_scope_column => $target->scope
 					))
-				->where($this->_left_column, '>=', $this->left)
-				->where($this->_right_column, '<=', $this->right)
-				->where($this->_scope_column, '=', $this->scope)
-				->execute($this->db);
+					->where($this->_left_column, '>=', $this->left)
+					->where($this->_right_column, '<=', $this->right)
+					->where($this->_scope_column, '=', $this->scope)
+					->update();
+			}
+			catch(Jelly_Validation_Exception $e)
+			{
+				$this->delete_space($this->left);
+				$this->unlock();
+				throw $e;
+			}
 
 			$this->delete_space($this->left, $size);
 		}
-		catch (Exception $e)
+		catch (Jelly_Validation_Exception $e)
 		{
 			//Unlock table and re-throw exception
 			$this->unlock();
@@ -829,8 +818,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 
 	/**
 	 *
-	 * @access public
-	 * @param $column - Which field to get.
+	 * @param  $column - Which field to get.
 	 * @return mixed
 	 */
 	public function &__get($column)
@@ -864,14 +852,6 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 			case 'descendants':
 				$descedants = $this->descendants();
 				return $descedants;
-			/*case 'left_column':
-				return $this->meta()->left_column;
-			case 'right_column':
-				return $this->meta()->right_column;
-			case 'level_column':
-				return $this->meta()->level_column;
-			case 'scope_column':
-				return $this->meta()->scope_column; */
 			case 'db':
 				$db = $this->meta()->db();
 				return $db;
@@ -900,14 +880,23 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 			if ( ! $this->verify_scope($scope->scope))
 				return FALSE;
 		}
+
 		return TRUE;
 	}
 
 	public function get_scopes()
 	{
-		return DB::select($this->_scope_column)->distinct(TRUE)->from($this->table)->as_object()->execute($this->db);
+		return Jelly::query($this->meta()->model())
+			->select_column($this->_scope_column)
+			->distinct(TRUE)
+			->select();
 	}
 
+	/**
+	 * @todo Convert queries into Jelly
+	 * @param  int $scope
+	 * @return bool
+	 */
 	public function verify_scope($scope)
 	{
 		$root = $this->root($scope);
@@ -959,7 +948,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 	/**
 	 * Force object to reload MPTT fields from database
 	 *
-	 * @return $this
+	 * @return Jelly_Model_MPTT
 	 */
 	public function reload()
 	{
@@ -968,18 +957,15 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 			return FALSE;
 		}
 
-		$mptt_vals = DB::select(
-				$this->_left_column,
-				$this->_right_column,
-				$this->_level_column,
-				$this->_scope_column
-			)
-			->from($this->table)
-			->where($this->meta()->primary_key(), '=', $this->{$this->meta()->primary_key()})
-			->execute($this->db)
-			->current();
+		$reloaded_model = Jelly::query($this->meta()->model(), $this->{$this->meta()->primary_key()})->select();
 
-		//return $this->values($mptt_vals);
+		$mptt_vals = array(
+			'left' => $reloaded_model->left,
+			'right' => $reloaded_model->right,
+			'level' => $reloaded_model->level,
+			'scope' => $reloaded_model->scope,
+		);
+
 		return $this->set($mptt_vals);
 	}
 
