@@ -98,7 +98,7 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 			}
 			elseif ($field instanceof Jelly_Field_ManyToMany)
 			{
-				$lock_tables[$table_prefix.$this->table.':'.$field->name] = $table_prefix.$field->through['model'];
+				$lock_tables[$table_prefix.$field->through['model']] = $table_prefix.$field->through['model'];
 			}
 			
 		}
