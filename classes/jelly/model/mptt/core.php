@@ -96,6 +96,11 @@ abstract class Jelly_Model_MPTT_Core extends Jelly_Model
 			{
 				$lock_tables[$table_prefix.$this->table.':'.$field->name] = $table_prefix.Jelly::meta($field->foreign['model'])->table();
 			}
+			elseif ($field instanceof Jelly_Field_ManyToMany)
+			{
+				$lock_tables[$table_prefix.$this->table.':'.$field->name] = $field->through['model'];
+			}
+			
 		}
 
 		$lock_tables_count = count($lock_tables);
